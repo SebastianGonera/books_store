@@ -22,6 +22,15 @@ class Book extends Model
         'category_id',
     ];
 
+    public function makeDTO(): Book{
+        $categoryId = $this['category_id'];
+        $categoryName = Category::where('id', $categoryId)->value('name');
+        $this['category'] = $categoryName;
+        unset($this['created_at']);
+        unset($this['updated_at']);
+        unset($this['category_id']);
+        return $this;
+    }
     public function category(){
         return $this->belongsTo(Category::class);
     }
