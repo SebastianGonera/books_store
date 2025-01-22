@@ -52,13 +52,6 @@ class CartItemController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id): void
-    {
-        BookController::class->show($id);
-    }
 
     /**
      * Update the specified resource in storage.
@@ -69,13 +62,14 @@ class CartItemController extends Controller
             if($id===""){
                 return response()->json(['error' => 'id is required'], 400);
             }
-            $item = CartItem::find($id)->firstOrFail();
+            $item = CartItem::where('id', $id)->first();
             if (!$item) {
                 return response()->json(['error' => 'item not found'], 404);
             }
             $item->update($request->validate([
-                'quantity' => 'required|integer|min:1|max:10',
+                'quantity' => 'required|integer|min:1|max:10'
             ]));
+
             return response()->json(['data' => $item, 'message' => 'item updated successfully']);
         }
         catch (\Exception $e) {
