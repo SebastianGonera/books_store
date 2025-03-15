@@ -23,7 +23,7 @@ class OrderRequest extends FormRequest
     {
         $rules = [
             'status'=> 'required|in:pending,processing,delivered,cancelled',
-            'total_price'=> 'required|numeric|min:10',
+            'total_price'=> 'required|decimal:2|min:10',
         ];
 
         if($this->isMethod('post')){

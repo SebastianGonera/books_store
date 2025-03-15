@@ -13,29 +13,30 @@ class OrderItemController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(string $id) :JsonResponse
+    public function index(string $id): JsonResponse
     {
-        try{
-            if ($id == ''){
-                return response()->json(['message'=>"Id is required"], 404);
+        try {
+            if ($id == '') {
+                return response()->json(['error' => "Id is required."], 400);
             }
             $orderItems = OrderItem::where('order_id', $id)
                 ->get()
                 ->makeHidden(['created_at', 'updated_at', 'book'])
                 ->map(function ($item) {
-                    $item['book_title']= $item->book->title;
+                    $item['book_title'] = $item->book->title;
                     $item['book_image_url'] = $item->book->image_url;
                     return $item;
-                })
-            ;
+                }
+                );
 
-            return response()->json(['message'=>"Order items found", 'data'=>$orderItems]);
-        }
-        catch (\Exception $exception){
-            return response()->json(['message' => $exception->getMessage()], 500);
+            if ($orderItems->isEmpty()) {
+                return response()->json(['error' => "No order items."], 404);
+            }
+            return response()->json(['message' => "Order items found.", 'data' => $orderItems]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
-
 
 
     /**
@@ -43,18 +44,16 @@ class OrderItemController extends Controller
      */
     public function store(OrderItemRequest $request): JsonResponse
     {
-        try{
+        try {
             $item = OrderItem::create($request->validated());
 
             if ($item) {
-                return response()->json(['data'=>$item, 'message'=> 'Item added to cart'], 201);
+                return response()->json(['message' => 'Item added to cart.', 'data' => $item], 201);
+            } else {
+                return response()->json(['error' => 'Item not created.'], 400);
             }
-            else{
-                return response()->json(['error' => 'Item not created'], 400);
-            }
-        }
-        catch (\Exception $exception){
-            return response()->json(['message' => $exception->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -64,40 +63,38 @@ class OrderItemController extends Controller
     public function update(OrderItemRequest $request, string $id): JsonResponse
     {
         try {
-            if($id===""){
-                return response()->json(['error' => 'id is required'], 400);
+            if ($id === "") {
+                return response()->json(['error' => 'Id is required.'], 400);
             }
             $item = OrderItem::where('id', $id)->first();
             if (!$item) {
-                return response()->json(['error' => 'item not found'], 404);
+                return response()->json(['error' => 'Item not found.'], 404);
             }
             $item->update($request->validated());
 
-            return response()->json(['data' => $item, 'message' => 'item updated successfully']);
-        }
-        catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'item updated successfully.', 'data' => $item], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id):JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         try {
-            if ($id == ''){
-                return response()->json(['message'=>"Id is required"], 404);
+            if ($id == '') {
+                return response()->json(['error' => "Id is required"], 400);
             }
             $orderItem = OrderItem::where('id', $id)->firstOrFail();
-            if (!$orderItem){
-                return response()->json(['message'=>"Order item not found"], 404);
+            if (!$orderItem) {
+                return response()->json(['error' => "Order item not found."], 404);
             }
             $orderItem->delete();
-            return response()->json(['message'=>"Order item successfully deleted"]);
-        }
-        catch (\Exception $exception){
-            return response()->json(['message' => $exception->getMessage()], 500);
+            return response()->json(['message' => "Order item successfully deleted."]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 }

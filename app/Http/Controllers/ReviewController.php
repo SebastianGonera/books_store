@@ -17,24 +17,20 @@ class ReviewController extends Controller
     {
         try {
             $reviews = Review::with(['user', 'book'])
-            ->get()
-            ->makeHidden(['created_at', 'updated_at'])
-            ->map(function ($review) {
-                return [
-                    'id' => $review->id,
-                    'comment' => $review->comment,
-                    'rating' => $review->rating,
-                    'username' => $review->user->name,
-                    'user_id' => $review->user_id,
-                    'book_title' => $review->book->title,
-                    'book_id' => $review->book_id,
-                ];
-            });
-            return response()->json($reviews);
-        }
-        catch (Exception $e) {
+                ->get()
+                ->makeHidden(['created_at', 'updated_at', 'user', 'book'])
+                ->map(function ($review) {
+                    $review['username'] = $review->user->name;
+                    $review['book_title'] = $review->book->title;
+                    return $review;
+                });
+            if ($reviews->isEmpty()) {
+                return response()->json(['error' => 'There are no reviews yet.'], 404);
+            }
+            return response()->json(['message' => 'Successfully get all reviews.', 'data' => $reviews]);
+        } catch (Exception $e) {
             print $e->getMessage();
-            return response()->json($e->getMessage(), 404);
+            return response()->json($e->getMessage(), 500);
         }
     }
 
@@ -54,12 +50,11 @@ class ReviewController extends Controller
                 });
 
             if ($reviews->isEmpty()) {
-                throw new Exception("This book doesn't have any reviews");
+                return response()->json(['error' => "This book doesn't have any reviews."], 404);
             }
 
-            return response()->json($reviews);
-        }
-        catch (\Exception $e) {
+            return response()->json(['message' => 'Successfully get reviews for book.', 'data' => $reviews]);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
 
@@ -80,16 +75,16 @@ class ReviewController extends Controller
                 });
 
             if ($reviews->isEmpty()) {
-                throw new Exception("This user doesn't have any reviews");
+                return response()->json(['error' => "This user doesn't have any reviews."], 404);
             }
 
-            return response()->json($reviews);
-        }
-        catch (\Exception $e) {
+            return response()->json(['message' => 'Successfully get reviews for user.', 'data' => $reviews]);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
 
     }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -97,9 +92,8 @@ class ReviewController extends Controller
     {
         try {
             $review = Review::create($request->validated());
-            return response()->json(['message' => 'Review created', 'review'=> $review],201);
-        }
-        catch (\Exception $e) {
+            return response()->json(['message' => 'Successfully review created.', 'data' => $review], 201);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -110,12 +104,17 @@ class ReviewController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-         $review = Review::find($id);
-         $review = $review->makeReviewDTO();
+            $review = Review::where('id', $id)
+                ->get()
+                ->makeHidden('created_at', 'updated_at', 'user', 'book')
+                ->map(function ($review) {
+                    $review['username'] = $review->user->name;
+                    $review['book_title'] = $review->book->title;
+                    return $review;
+                });
 
-         return response()->json($review);
-        }
-        catch (\Exception $e) {
+            return response()->json(['message' => 'Successfully get review..', 'data' => $review]);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -131,9 +130,8 @@ class ReviewController extends Controller
                 throw new Exception("This review doesn't exist");
             }
             $review->update($request->validated());
-            return response()->json(['message' => 'Review updated', 'review'=> $review],201);
-        }
-        catch (\Exception $e) {
+            return response()->json(['message' => 'Review updated', 'review' => $review], 201);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -144,17 +142,16 @@ class ReviewController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            if ($id === ""){
+            if ($id === "") {
                 throw new Exception("ID is required.");
             }
             $review = Review::find($id);
-            if ($review == null){
+            if ($review == null) {
                 throw new Exception("This review doesn't exist");
             }
             $review->delete();
             return response()->json('Review has been deleted');
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }

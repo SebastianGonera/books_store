@@ -17,13 +17,6 @@ class Review extends Model
         'comment',
     ];
 
-    public function makeReviewDTO():Review{
-        $this->makeHidden(['created_at','updated_at', 'user', 'book']);
-        $this['title'] = $this->book->title;
-        $this['username'] = $this->user->name;
-        return $this;
-    }
-
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);

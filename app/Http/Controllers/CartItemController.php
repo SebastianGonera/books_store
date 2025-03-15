@@ -26,7 +26,12 @@ class CartItemController extends Controller
                     return $item;
                 })
             ;
-            return response()->json($cartItems);
+
+            if($cartItems->isEmpty()){
+                return response()->json(['error'=> 'There are no cart items yet.'], 404);
+            }
+
+            return response()->json(['message'=>'Successfully get all items in cart.', 'data'=>$cartItems]);
         }
         catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -41,7 +46,7 @@ class CartItemController extends Controller
         try{
             $item = CartItem::create($request->validated());
             if ($item) {
-                return response()->json(['data'=>$item, 'message'=> 'Item added to cart'], 201);
+                return response()->json(['message'=> 'Item added to cart.', 'data'=>$item], 201);
             }
             else{
                 return response()->json(['error' => 'Item not created'], 400);
@@ -60,17 +65,17 @@ class CartItemController extends Controller
     {
         try {
             if($id===""){
-                return response()->json(['error' => 'id is required'], 400);
+                return response()->json(['error' => 'Id is required.'], 400);
             }
             $item = CartItem::where('id', $id)->first();
             if (!$item) {
-                return response()->json(['error' => 'item not found'], 404);
+                return response()->json(['error' => 'Item not found.'], 404);
             }
             $item->update($request->validate([
                 'quantity' => 'required|integer|min:1|max:10'
             ]));
 
-            return response()->json(['data' => $item, 'message' => 'item updated successfully']);
+            return response()->json(['message' => 'Item updated successfully.', 'data' => $item],201);
         }
         catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -84,14 +89,14 @@ class CartItemController extends Controller
     {
         try {
             if ($id===""){
-                return response()->json(['error' => 'id is required'], 400);
+                return response()->json(['error' => 'Id is required.'], 400);
             }
             $item = CartItem::where("id", $id)->firstOrFail();
             if (!$item) {
-                return response()->json(['error' => 'item not found'], 404);
+                return response()->json(['error' => 'Item not found.'], 404);
             }
             $item->delete();
-            return response()->json(['message' => 'item deleted successfully']);
+            return response()->json(['message' => 'Item deleted successfully.']);
         }
         catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

@@ -17,19 +17,22 @@ class BookController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $books = Book::all()->each(function ($book) {
-                return $book->makeDTO();
-            });
+            $books = Book::all()
+                ->makeHidden(['category_id', 'created_at', 'updated_at'])
+                ->map(function ($book) {
+                    $book['category'] = $book->category;
+                    return $book;
+                })
+            ;
 
             if($books->isEmpty()){
-                throw new Exception('There are no books yet');
+                return response()->json(['error'=> 'There are no books yet.'], 404);
             }
 
-            return response()->json($books);
+            return response()->json(['message'=>'Successfully get all books.','data'=>$books]);
         }
         catch (Exception $e) {
-            print $e->getMessage();
-            return response()->json($e->getMessage(), 404);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -39,11 +42,11 @@ class BookController extends Controller
     public function store(BookRequest $request): JsonResponse
     {
         try{
-            Book::create($request->validated());
-            return response()->json('Book created successfully', 201);
+            $book = Book::create($request->validated());
+            return response()->json(['message'=> 'Successfully added new books.', 'data'=>$book], 201);
         }
         catch (Exception $e) {
-            return response()->json($e->getMessage(), 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -54,17 +57,22 @@ class BookController extends Controller
     {
         try {
             if($id === ""){
-                throw new Exception('Book id or book not found');
+                return response()->json(['error'=> 'Book id is required.'], 400);
             }
-            $book = Book::find($id);
+            $book = Book::where('id', $id)
+                ->get()
+                ->makeHidden(['category_id', 'created_at', 'updated_at'])
+                ->map(function ($book) {
+                    $book['category'] = $book->category;
+                    return $book;
+                });
             if($book == null){
-                throw new Exception('Book not found');
+                return response()->json(['error'=> 'Book not found.'], 404);
             }
-            $book = $book->makeDTO();
             return response()->json($book);
         }
         catch (Exception $e) {
-            return response()->json($e->getMessage(), 404);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -75,14 +83,15 @@ class BookController extends Controller
     {
         try {
             if($id === ""){
-                throw new Exception('Book id or book not found');
+                return response()->json(['error'=> 'Book id is required.'], 400);
             }
             $book = Book::find($id);
             $book->update($request->validated());
-            return response()->json($book);
+
+            return response()->json(['message'=>'Book updated successfully.','data'=>$book],201);
         }
         catch (Exception $e) {
-            return response()->json($e->getMessage(), 404);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -93,18 +102,18 @@ class BookController extends Controller
     {
         try{
             if($id === ""){
-                throw new Exception('Book id or book not found');
+                return response()->json(['error'=> 'Book id is required.'], 400);
             }
             $book = Book::where('id', $id);
             if($book == null){
-                throw new Exception('Book not found');
+                return response()->json(['error'=> 'Book not found.'], 404);
             }
             $book->delete();
 
-            return response()->json('Book successfully deleted');
+            return response()->json(['message'=>'Book successfully deleted']);
         }
         catch (Exception $e) {
-            return response()->json($e->getMessage(), 404);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }
